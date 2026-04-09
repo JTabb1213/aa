@@ -1,0 +1,11 @@
+# Realtime Market Data Ingestion Server
+# ─────────────────────────────────────
+
+# Async websocket client
+websockets>=12.0
+
+# Async HTTP client (Kraken REST API + health check server)
+aiohttp>=3.9
+
+# Environment variable management
+python-dotenv>=1.0

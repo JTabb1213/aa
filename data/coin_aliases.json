@@ -1,0 +1,128 @@
+{
+    "assets": {
+        "avalanche-2": {
+            "symbol": "AVAX",
+            "aliases": [
+                "avalanche",
+                "avalanche-2",
+                "avax"
+            ],
+            "exchange_symbols": {
+                "kraken": "AVAX",
+                "coinbase": "AVAX",
+                "binance": "AVAX",
+                "bybit": "AVAX",
+                "okx": "AVAX",
+                "pionex": "AVAX"
+            }
+        },
+        "bitcoin": {
+            "symbol": "BTC",
+            "aliases": [
+                "bitcoin",
+                "btc",
+                "xbt"
+            ],
+            "exchange_symbols": {
+                "kraken": "XBT",
+                "coinbase": "BTC",
+                "binance": "BTC",
+                "bybit": "BTC",
+                "okx": "BTC",
+                "pionex": "BTC"
+            }
+        },
+        "cardano": {
+            "symbol": "ADA",
+            "aliases": [
+                "cardano",
+                "ada"
+            ],
+            "exchange_symbols": {
+                "kraken": "ADA",
+                "coinbase": "ADA",
+                "binance": "ADA",
+                "bybit": "ADA",
+                "okx": "ADA",
+                "pionex": "ADA"
+            }
+        },
+        "dogecoin": {
+            "symbol": "DOGE",
+            "aliases": [
+                "dogecoin",
+                "doge",
+                "xdg"
+            ],
+            "exchange_symbols": {
+                "kraken": "DOGE",
+                "coinbase": "DOGE",
+                "binance": "DOGE",
+                "bybit": "DOGE",
+                "okx": "DOGE",
+                "pionex": "DOGE"
+            }
+        },
+        "ethereum": {
+            "symbol": "ETH",
+            "aliases": [
+                "ethereum",
+                "eth",
+                "ether"
+            ],
+            "exchange_symbols": {
+                "kraken": "ETH",
+                "coinbase": "ETH",
+                "binance": "ETH",
+                "bybit": "ETH",
+                "okx": "ETH",
+                "pionex": "ETH"
+            }
+        },
+        "litecoin": {
+            "symbol": "LTC",
+            "aliases": [
+                "litecoin",
+                "ltc"
+            ],
+            "exchange_symbols": {
+                "kraken": "LTC",
+                "coinbase": "LTC",
+                "binance": "LTC",
+                "bybit": "LTC",
+                "okx": "LTC",
+                "pionex": "LTC"
+            }
+        },
+        "ripple": {
+            "symbol": "XRP",
+            "aliases": [
+                "ripple",
+                "xrp"
+            ],
+            "exchange_symbols": {
+                "kraken": "XRP",
+                "coinbase": "XRP",
+                "binance": "XRP",
+                "bybit": "XRP",
+                "okx": "XRP",
+                "pionex": "XRP"
+            }
+        },
+        "solana": {
+            "symbol": "SOL",
+            "aliases": [
+                "solana",
+                "sol"
+            ],
+            "exchange_symbols": {
+                "kraken": "SOL",
+                "coinbase": "SOL",
+                "binance": "SOL",
+                "bybit": "SOL",
+                "okx": "SOL",
+                "pionex": "SOL"
+            }
+        }
+    }
+}
