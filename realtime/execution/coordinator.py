@@ -100,7 +100,7 @@ class ArbitrageCoordinator:
             exchange=signal.buy_exchange,
             coin_id=signal.coin_id,
             side=OrderSide.BUY,
-            quote="usd",
+            quote="usdt",
             size_usd=trade_usd,
             order_type=OrderType.MARKET,
             limit_price=signal.buy_ask,     # hint for sell volume calc
@@ -109,7 +109,7 @@ class ArbitrageCoordinator:
             exchange=signal.sell_exchange,
             coin_id=signal.coin_id,
             side=OrderSide.SELL,
-            quote="usd",
+            quote="usdt",
             size_usd=trade_usd,
             order_type=OrderType.MARKET,
             limit_price=signal.sell_bid,     # hint for sell volume calc

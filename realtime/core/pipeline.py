@@ -13,6 +13,7 @@ from core.models import RawTick
 from exchanges.base import BaseExchange
 from normalizer.normalizer import Normalizer
 from storage.price_cache import PriceCache
+from strategy.arbitrage import TAKER_FEES, DEFAULT_TAKER_FEE
 
 logger = logging.getLogger(__name__)
 
@@ -25,13 +26,13 @@ class _CachePrinter:
     is redrawn in-place using ANSI escape codes — the output never scrolls.
 
     Column layout (arbitrage view):
-        COIN | BUY FROM (lowest price) | SELL TO (highest price) | SPREAD
+        COIN | BUY FROM | PRICE | SELL TO | PRICE | SPREAD | NET SPREAD
     """
 
-    _HDR = "  {:<22}{:<10}{:<18}{:<10}{:<18}{:<10}".format(
-        "COIN", "BUY FROM", "PRICE", "SELL TO", "PRICE", "SPREAD"
+    _HDR = "  {:<22}{:<10}{:<18}{:<10}{:<18}{:<10}{:<10}".format(
+        "COIN", "BUY FROM", "PRICE", "SELL TO", "PRICE", "SPREAD", "NET"
     )
-    _SEP = "  " + "\u2500" * 88
+    _SEP = "  " + "\u2500" * 98
 
     def __init__(self) -> None:
         self._rows: dict = {}   # coin_id -> rendered line
@@ -41,18 +42,51 @@ class _CachePrinter:
     def update(self, coin_id: str, agg: dict) -> None:
         lowest  = agg["lowest"]
         highest = agg["highest"]
-        spread  = (
-            round((highest.price - lowest.price) / lowest.price * 100, 4)
-            if lowest.price else 0.0
+
+        buy_ask  = lowest.price
+        sell_bid = highest.price
+
+        # Gross spread (raw price difference)
+        spread = (
+            round((sell_bid - buy_ask) / buy_ask * 100, 4)
+            if buy_ask else 0.0
         )
-        self._rows[coin_id] = "  {:<22}{:<10}${:<17.4f}{:<10}${:<17.4f}{:<9}%".format(
-            coin_id,
-            lowest.exchange,  lowest.price,
-            highest.exchange, highest.price,
-            spread,
+
+        # Net spread (after taker fees on both legs)
+        buy_fee  = TAKER_FEES.get(lowest.exchange,  DEFAULT_TAKER_FEE)
+        sell_fee = TAKER_FEES.get(highest.exchange, DEFAULT_TAKER_FEE)
+        effective_buy  = buy_ask  * (1 + buy_fee)
+        effective_sell = sell_bid * (1 - sell_fee)
+        net_spread = (
+            round((effective_sell - effective_buy) / effective_buy * 100, 4)
+            if effective_buy else 0.0
+        )
+
+        # Color the net spread: green if positive, red if negative
+        if net_spread > 0:
+            net_str = f"\033[32m{net_spread:<8}%\033[0m"
+        elif net_spread < 0:
+            net_str = f"\033[31m{net_spread:<8}%\033[0m"
+        else:
+            net_str = f"{net_spread:<8}%"
+
+        self._rows[coin_id] = (
+            "  {:<22}{:<10}${:<17.4f}{:<10}${:<17.4f}{:<9}%{}".format(
+                coin_id,
+                lowest.exchange,  lowest.price,
+                highest.exchange, highest.price,
+                spread,
+                net_str,
+            )
         )
         if coin_id not in self._order:
             self._order.append(coin_id)
+        # NOTE: no _redraw() here — redraw is driven by _print_loop timer
+
+    def redraw(self) -> None:
+        """Redraw the full price table in-place. Called by the timer loop."""
+        if not self._rows:
+            return
         self._redraw()
 
     def _redraw(self) -> None:
@@ -134,6 +168,13 @@ class Pipeline:
             name="stats",
         ))
 
+        # 4. Periodic display redraw — decoupled from tick processing
+        if config.CACHE_LIVE_PRINT:
+            tasks.append(asyncio.create_task(
+                self._print_loop(),
+                name="print",
+            ))
+
         logger.info(
             f"Pipeline running with {len(self.connectors)} connector(s): "
             f"{[c.NAME for c in self.connectors]}"
@@ -204,6 +245,17 @@ class Pipeline:
                 self._dropped_count += 1
             finally:
                 self.queue.task_done()
+
+    # ------------------------------------------------------------------
+    # Periodic display loop
+    # ------------------------------------------------------------------
+
+    async def _print_loop(self) -> None:
+        """Redraw the price table every 500ms — decoupled from tick rate."""
+        await asyncio.sleep(2)   # let exchanges connect and populate first
+        while True:
+            self._cache_printer.redraw()
+            await asyncio.sleep(0.5)
 
     # ------------------------------------------------------------------
     # Stats logger

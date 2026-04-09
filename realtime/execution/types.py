@@ -56,7 +56,7 @@ class OrderRequest:
     exchange: str
     coin_id: str
     side: OrderSide
-    quote: str = "usd"
+    quote: str = "usdt"
     size_usd: float = 0.0
     order_type: OrderType = OrderType.MARKET
     limit_price: Optional[float] = None

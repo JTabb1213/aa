@@ -123,14 +123,14 @@ class ExchangeClient(ABC):
     # ------------------------------------------------------------------
 
     @abstractmethod
-    def get_exchange_symbol(self, coin_id: str, quote: str = "usd") -> Optional[str]:
+    def get_exchange_symbol(self, coin_id: str, quote: str = "usdt") -> Optional[str]:
         """
         Map a canonical coin_id + quote to the exchange-native symbol.
 
         Examples:
-            "bitcoin", "usd"  → "XBTUSD"     (Kraken)
-            "bitcoin", "usd"  → "BTC-USD"     (Coinbase)
-            "bitcoin", "usdt" → "BTCUSDT"     (Binance)
+            "bitcoin", "usdt" → "XBTUSDT"    (Kraken)
+            "bitcoin", "usdt" → "BTC-USDT"   (Coinbase)
+            "bitcoin", "usdt" → "BTCUSDT"    (Binance)
 
         Returns None if the pair is not supported on this exchange.
         """

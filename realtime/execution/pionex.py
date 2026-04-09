@@ -73,7 +73,7 @@ class PionexClient(ExchangeClient):
     # Symbol mapping
     # ------------------------------------------------------------------
 
-    def get_exchange_symbol(self, coin_id: str, quote: str = "usd") -> Optional[str]:
+    def get_exchange_symbol(self, coin_id: str, quote: str = "usdt") -> Optional[str]:
         base = COIN_TO_PIONEX.get(coin_id)
         q = QUOTE_MAP.get(quote.lower())
         if base and q:

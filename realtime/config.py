@@ -76,10 +76,10 @@ PIONEX_REST_URL = os.getenv(
 # Quote currencies to track
 # ---------------------------------------------------------------------------
 # Only subscribe to pairs quoted in these currencies.
-# Comma-separated in env, e.g. "USD,EUR"
+# Comma-separated in env, e.g. "USDT,USD"
 QUOTE_CURRENCIES = [
     q.strip().upper()
-    for q in os.getenv("QUOTE_CURRENCIES", "USD").split(",")
+    for q in os.getenv("QUOTE_CURRENCIES", "USDT").split(",")
 ]
 
 # ---------------------------------------------------------------------------

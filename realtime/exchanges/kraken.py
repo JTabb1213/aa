@@ -52,8 +52,8 @@ TEST_PAIRS_OVERRIDE = None
 
 '''''
 TEST_PAIRS_OVERRIDE = [
-     "BTC/USD", "ETH/USD", "SOL/USD", "XRP/USD", "ADA/USD",
-     "DOGE/USD", "AVAX/USD", "DOT/USD", "LINK/USD", "POL/USD",
+     "BTC/USDT", "ETH/USDT", "SOL/USDT", "XRP/USDT", "ADA/USDT",
+     "DOGE/USDT", "AVAX/USDT", "DOT/USDT", "LINK/USDT", "POL/USDT",
 ]
 # ==============================================================================
 '''''
@@ -106,7 +106,7 @@ class KrakenConnector(BaseExchange):
                 if kraken_sym:
                     # Translate v1 symbols (XBT) to v2 (BTC) for WS v2 compatibility
                     base = V1_TO_V2.get(kraken_sym, kraken_sym)
-                    pairs.append(f"{base}/USD")
+                    pairs.append(f"{base}/USDT")
             
             pairs = sorted(set(pairs))
             if pairs:
@@ -181,7 +181,7 @@ class KrakenConnector(BaseExchange):
         
         # Last resort: hardcoded seed
         logger.warning("[kraken] Using hardcoded seed pairs (last resort)")
-        return ["BTC/USD", "ETH/USD", "SOL/USD", "XRP/USD", "ADA/USD"]
+        return ["BTC/USDT", "ETH/USDT", "SOL/USDT", "XRP/USDT", "ADA/USDT"]
 
     # ------------------------------------------------------------------
     # WebSocket streaming

@@ -81,6 +81,7 @@ class BybitConnector(BaseExchange):
 
     def _load_symbols_from_json(self) -> List[str]:
         """Load trading symbols from coin_aliases.json (primary source)."""
+        logger.debug(f"[bybit] Attempting to load from: {config.ALIAS_JSON_PATH}")
         try:
             with open(config.ALIAS_JSON_PATH) as fp:
                 alias_data = json.load(fp)
@@ -95,6 +96,7 @@ class BybitConnector(BaseExchange):
             if symbols:
                 logger.info(f"[bybit] Loaded {len(symbols)} symbols from coin_aliases.json")
                 return symbols
+            logger.warning("[bybit] JSON loaded but no symbols found for bybit")
         except Exception as e:
             logger.warning(f"[bybit] Failed to load symbols from JSON: {e}")
         return []
@@ -148,6 +150,9 @@ class BybitConnector(BaseExchange):
         """
         Connect to Bybit v5 WebSocket, subscribe to tickers,
         and emit RawTick events to the ingestion queue.
+
+        Note: Bybit spot tickers only provide lastPrice (no bid/ask).
+        The normalizer uses lastPrice as bid/ask fallback.
         """
         self._symbols = await self._fetch_symbols()
 
@@ -164,48 +169,50 @@ class BybitConnector(BaseExchange):
 
         logger.info(f"[bybit] Subscribing to {len(self._symbols)} symbols")
 
-        # Bybit v5 allows subscribing to multiple tickers per connection
         subscribe_msg = json.dumps({
             "op": "subscribe",
             "args": [f"tickers.{sym}" for sym in self._symbols],
         })
 
         async with websockets.connect(self._ws_url, ping_interval=20) as ws:
+            logger.info(f"[bybit] WebSocket connected to {self._ws_url}")
             await ws.send(subscribe_msg)
             logger.info("[bybit] Connected and subscribed")
 
             async for message in ws:
                 data = json.loads(message)
-
                 topic = data.get("topic", "")
+
                 if not topic.startswith("tickers."):
-                    # Handle ping/pong keepalive
-                    if data.get("op") == "ping" or data.get("ret_msg") == "pong":
+                    if data.get("op") == "ping":
                         await ws.send(json.dumps({"op": "pong"}))
                     continue
 
                 ticker = data.get("data", {})
                 symbol = ticker.get("symbol", "")
+                if not symbol:
+                    continue
 
                 try:
-                    bid = float(ticker.get("bid1Price", 0) or 0)
-                    ask = float(ticker.get("ask1Price", 0) or 0)
-                    last = float(ticker.get("lastPrice", 0) or 0)
-                    volume = float(ticker.get("volume24h", 0) or 0)
+                    # Bybit spot tickers have lastPrice but no bid1Price/ask1Price
+                    last   = float(ticker.get("lastPrice",  0) or 0)
+                    volume = float(ticker.get("volume24h",  0) or 0)
                 except (ValueError, TypeError):
+                    continue
+
+                if not last:
                     continue
 
                 tick = RawTick(
                     exchange="bybit",
-                    pair=symbol,  # "BTCUSDT" format
+                    pair=symbol,
                     data={
-                        "bid": bid,
-                        "ask": ask,
+                        "bid": None,
+                        "ask": None,
                         "last": last,
                         "vwap": None,
                         "volume_24h": volume,
                     },
                     received_at=time.time(),
                 )
-
                 await self._emit(tick)

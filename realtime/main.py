@@ -134,6 +134,7 @@ async def main():
     okx = OKXConnector(ingestion_queue)
     pionex = PionexConnector(ingestion_queue)
     connectors = [kraken, coinbase, binance, bybit, okx, pionex]
+   #connectors = [binance]
 
     # 6. Wire up the pipeline
     _pipeline = Pipeline(

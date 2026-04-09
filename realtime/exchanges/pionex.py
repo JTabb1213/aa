@@ -1,25 +1,37 @@
 """
 Pionex websocket connector.
 
-Connects to Pionex's WebSocket API, subscribes to the ticker stream
+Connects to Pionex's public WebSocket API, subscribes to the TRADE stream
 for USDT pairs, and emits RawTick events onto the ingestion queue.
 
-Pionex API docs:
-    https://pionex-doc.gitbook.io/apidocs/websocket/market-data
+Pionex's public stream only exposes TRADE and DEPTH topics — there is no
+TICKER topic. We use TRADE to extract the latest traded price.
 
-Message format (ticker):
-    Pionex uses a subscribe/push model. After subscribing to
-    "SUBSCRIBE_TICKER", updates arrive as:
+Pionex API docs:
+    https://pionex-doc.gitbook.io/apidocs/websocket/general-info
+    https://pionex-doc.gitbook.io/apidocs/websocket/public-stream/trade
+
+IMPORTANT — heartbeat:
+    The server sends {"op": "PING"} every 15s. The client MUST reply with
+    {"op": "PONG", "timestamp": <ms>} or the server closes after 3 missed
+    PINGs. The websockets library ping_interval must be set to None so it
+    does not interfere with Pionex's custom protocol.
+
+Message format (trade):
     {
-        "topic": "TICKER",
-        "data": {
-            "symbol": "BTC_USDT",
-            "close": "65432.10",
-            "bid": "65432.00",
-            "ask": "65433.00",
-            "volume": "12345.67",
+        "topic": "TRADE",
+        "symbol": "BTC_USDT",
+        "data": [
+            {
+                "symbol": "BTC_USDT",
+                "tradeId": "600848671",
+                "price": "65432.10",
+                "size": "0.0122",
+                "side": "BUY",
+                "timestamp": 1710000000000
+            },
             ...
-        },
+        ],
         "timestamp": 1710000000000
     }
 
@@ -82,6 +94,7 @@ class PionexConnector(BaseExchange):
 
     def _load_symbols_from_json(self) -> List[str]:
         """Load trading symbols from coin_aliases.json (primary source)."""
+        logger.debug(f"[pionex] Attempting to load from: {config.ALIAS_JSON_PATH}")
         try:
             with open(config.ALIAS_JSON_PATH) as fp:
                 alias_data = json.load(fp)
@@ -96,6 +109,7 @@ class PionexConnector(BaseExchange):
             if symbols:
                 logger.info(f"[pionex] Loaded {len(symbols)} symbols from coin_aliases.json")
                 return symbols
+            logger.warning("[pionex] JSON loaded but no symbols found for pionex")
         except Exception as e:
             logger.warning(f"[pionex] Failed to load symbols from JSON: {e}")
         return []
@@ -162,12 +176,14 @@ class PionexConnector(BaseExchange):
 
         logger.info(f"[pionex] Subscribing to {len(self._symbols)} symbols")
 
-        async with websockets.connect(self._ws_url, ping_interval=20) as ws:
-            # Subscribe to each symbol's ticker
+        # ping_interval=None: we handle Pionex's custom PING/PONG manually
+        async with websockets.connect(self._ws_url, ping_interval=None) as ws:
+            logger.info(f"[pionex] WebSocket connected to {self._ws_url}")
+            # Subscribe to each symbol's TRADE stream
             for sym in self._symbols:
                 subscribe_msg = json.dumps({
                     "op": "SUBSCRIBE",
-                    "topic": "TICKER",
+                    "topic": "TRADE",
                     "symbol": sym,
                 })
                 await ws.send(subscribe_msg)
@@ -177,19 +193,32 @@ class PionexConnector(BaseExchange):
             async for message in ws:
                 data = json.loads(message)
 
-                topic = data.get("topic", "")
-                if topic != "TICKER":
-                    # Handle pong or subscription ack
+                op = data.get("op", "")
+
+                # --- Heartbeat: reply to PING with PONG ---
+                if op == "PING":
+                    pong = json.dumps({"op": "PONG", "timestamp": int(time.time() * 1000)})
+                    await ws.send(pong)
                     continue
 
-                ticker = data.get("data", {})
-                symbol = ticker.get("symbol", "")
+                if op == "CLOSE":
+                    logger.warning("[pionex] Server sent CLOSE")
+                    break
 
+                topic = data.get("topic", "")
+                if topic != "TRADE":
+                    continue
+
+                symbol = data.get("symbol", "")
+                trades = data.get("data", [])
+                if not trades:
+                    continue
+
+                # Use the most recent trade as the price snapshot
+                latest = trades[0]
                 try:
-                    bid = float(ticker.get("bid", 0) or 0)
-                    ask = float(ticker.get("ask", 0) or 0)
-                    last = float(ticker.get("close", 0) or 0)
-                    volume = float(ticker.get("volume", 0) or 0)
+                    last = float(latest.get("price", 0) or 0)
+                    volume = float(latest.get("size", 0) or 0)
                 except (ValueError, TypeError):
                     continue
 
@@ -197,8 +226,8 @@ class PionexConnector(BaseExchange):
                     exchange="pionex",
                     pair=symbol,  # "BTC_USDT" format
                     data={
-                        "bid": bid,
-                        "ask": ask,
+                        "bid": None,
+                        "ask": None,
                         "last": last,
                         "vwap": None,
                         "volume_24h": volume,

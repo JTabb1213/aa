@@ -105,13 +105,21 @@ class ArbitrageSignal:
     timestamp: float = field(default_factory=time.time)
 
     def __str__(self) -> str:
+        units = config.TRADE_SIZE_USD / self.buy_ask if self.buy_ask else 0
+        spent    = units * self.buy_ask
+        received = units * self.sell_bid
         return (
-            f"[signal] {self.coin_id:<20} "
-            f"BUY  {self.buy_exchange:<10} ask=${self.buy_ask:<12.4f} "
-            f"SELL {self.sell_exchange:<10} bid=${self.sell_bid:<12.4f} "
-            f"gross={self.gross_spread_pct:.4f}%  "
-            f"net={self.net_spread_pct:.4f}%  "
-            f"est_profit=${self.est_profit_usd:.4f}"
+            f"\n  ┌─ ARBITRAGE SIGNAL ─────────────────────────────────────────┐\n"
+            f"  │  Coin       : {self.coin_id}\n"
+            f"  │  BUY  on    : {self.buy_exchange:<10}  ask = ${self.buy_ask:,.4f}\n"
+            f"  │  SELL on    : {self.sell_exchange:<10}  bid = ${self.sell_bid:,.4f}\n"
+            f"  │  ── Simulation (${config.TRADE_SIZE_USD:,.0f} USDT trade) ──────────────\n"
+            f"  │  Buy  {units:.6f} {self.coin_id:<12} cost  ${spent:>10,.4f} USDT\n"
+            f"  │  Sell {units:.6f} {self.coin_id:<12} recv  ${received:>10,.4f} USDT\n"
+            f"  │  Gross spread : {self.gross_spread_pct:+.4f}%\n"
+            f"  │  Net spread   : {self.net_spread_pct:+.4f}%  (after fees)\n"
+            f"  │  Est. profit  : ${self.est_profit_usd:,.4f} USDT\n"
+            f"  └────────────────────────────────────────────────────────────┘"
         )
 
 

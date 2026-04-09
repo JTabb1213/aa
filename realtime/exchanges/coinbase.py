@@ -40,8 +40,8 @@ logger = logging.getLogger(__name__)
 # ==============================================================================
 TEST_PRODUCTS_OVERRIDE = None
 # TEST_PRODUCTS_OVERRIDE = [
-#     "BTC-USD", "ETH-USD", "SOL-USD", "XRP-USD", "ADA-USD",
-#     "DOGE-USD", "AVAX-USD", "DOT-USD", "LINK-USD", "LTC-USD",
+#     "BTC-USDT", "ETH-USDT", "SOL-USDT", "XRP-USDT", "ADA-USDT",
+#     "DOGE-USDT", "AVAX-USDT", "DOT-USDT", "LINK-USDT", "LTC-USDT",
 # ]
 # ==============================================================================
 
@@ -90,7 +90,7 @@ class CoinbaseConnector(BaseExchange):
                 coinbase_sym = entry.get("exchange_symbols", {}).get("coinbase")
                 if coinbase_sym:
                     # Coinbase uses "BTC-USD" format
-                    products.append(f"{coinbase_sym}-USD")
+                    products.append(f"{coinbase_sym}-USDT")
             
             products = sorted(set(products))
             if products:
@@ -153,8 +153,8 @@ class CoinbaseConnector(BaseExchange):
         # Last resort: hardcoded seed
         logger.warning("[coinbase] Using hardcoded seed products (last resort)")
         return [
-            "BTC-USD", "ETH-USD", "SOL-USD", "XRP-USD", "ADA-USD",
-            "DOGE-USD", "AVAX-USD", "DOT-USD", "LINK-USD", "LTC-USD",
+            "BTC-USDT", "ETH-USDT", "SOL-USDT", "XRP-USDT", "ADA-USDT",
+            "DOGE-USDT", "AVAX-USDT", "DOT-USDT", "LINK-USDT", "LTC-USDT",
         ]
 
     # ------------------------------------------------------------------

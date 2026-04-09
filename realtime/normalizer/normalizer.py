@@ -66,11 +66,22 @@ class Normalizer:
 
         # --- Extract and compute fields ---
         data = tick.data
-        bid = float(data.get("bid", 0))
-        ask = float(data.get("ask", 0))
-        mid = (bid + ask) / 2 if bid and ask else 0
-        last = float(data.get("last", 0))
-        spread_pct = round((ask - bid) / mid * 100, 4) if mid else 0
+        bid  = float(data.get("bid")  or 0)
+        ask  = float(data.get("ask")  or 0)
+        last = float(data.get("last") or 0)
+
+        # Primary price: mid-point of bid/ask.
+        # Fallback: last traded price (used by Bybit spot tickers and
+        # Pionex TRADE stream which don't provide bid/ask).
+        mid  = (bid + ask) / 2 if bid and ask else last
+        spread_pct = round((ask - bid) / mid * 100, 4) if (mid and bid and ask) else 0
+
+        # If an exchange only provides last price, use it as bid/ask
+        # so the aggregator sees a valid price for comparison.
+        if not bid and last:
+            bid = last
+        if not ask and last:
+            ask = last
 
         return NormalizedTick(
             coin_id=coin_id,
