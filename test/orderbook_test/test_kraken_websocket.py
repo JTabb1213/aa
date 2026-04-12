@@ -90,7 +90,7 @@ def fetch_kraken_pairs():
         return pairs
     except Exception as e:
         print(f"[REST] Failed to fetch pairs: {e} — using fallback")
-        return ["XBT/USD", "ETH/USD", "SOL/USD", "XRP/USD"]
+        return ["XBT/USDT", "ETH/USDT", "SOL/USDT", "XRP/USDT"]
 
 
 # ---------------------------------------------------------------------------
@@ -174,7 +174,7 @@ async def ws_listener(conn_id, pairs):
                             volume   = float(t[1])
                             ts       = float(t[2])
                             side     = "buy" if t[3] == "b" else "sell"
-                            notional = price * volume   # USD value of this trade
+                            notional = price * volume   # USDT value of this trade
 
                             trade_count += 1
                             recent_trades.append({

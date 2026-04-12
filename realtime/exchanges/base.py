@@ -90,8 +90,13 @@ class BaseExchange(ABC):
                 await asyncio.sleep(backoff)
                 backoff = min(backoff * 2, 60)
             else:
-                # Clean disconnect (shouldn't normally happen) — reset backoff
-                backoff = 1
+                # Clean disconnect — apply same backoff so we don't spin-loop
+                logger.warning(
+                    f"[{self.NAME}] Disconnected cleanly. "
+                    f"Reconnecting in {backoff}s..."
+                )
+                await asyncio.sleep(backoff)
+                backoff = min(backoff * 2, 60)
 
     def stop(self) -> None:
         """Signal the connector to stop."""

@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """
-Kraken Execution Test.
+Coinbase Execution Test.
 
-Tests the Kraken REST trading endpoints to verify auth + connectivity.
+Tests the Coinbase Advanced Trade REST endpoints to verify auth + connectivity.
 Runs in DRY-RUN mode by default (no real orders). Set DRY_RUN=false
 in .env to test against the live API with real credentials.
 
 Usage:
-    python test_kraken_execution.py
+    python test_coinbase_execution.py
 
 Press Ctrl+C to stop.
 """
@@ -16,30 +16,29 @@ import asyncio
 import os
 import sys
 
-# Add realtime/ to path so we can import the execution module
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "realtime"))
 
 from dotenv import load_dotenv
 load_dotenv(os.path.join(os.path.dirname(__file__), "..", "realtime", ".env"))
 
-from execution.kraken import KrakenClient
+from execution.coinbase import CoinbaseClient
 from execution.types import OrderRequest, OrderSide, OrderType
 
 
-async def test_kraken():
-    api_key = os.getenv("KRAKEN_API_KEY", "")
-    api_secret = os.getenv("KRAKEN_API_SECRET", "")
+async def test_coinbase():
+    api_key = os.getenv("COINBASE_API_KEY", "")
+    api_secret = os.getenv("COINBASE_API_SECRET", "")
     dry_run = os.getenv("DRY_RUN", "true").lower() in ("1", "true", "yes", "on")
 
     print("=" * 60)
-    print("  Kraken Execution Test")
+    print("  Coinbase Execution Test")
     print("=" * 60)
     print(f"  API Key:  {'***' + api_key[-4:] if len(api_key) > 4 else '(empty)'}")
     print(f"  Dry Run:  {dry_run}")
     print("=" * 60)
     print()
 
-    client = KrakenClient(api_key=api_key, api_secret=api_secret, dry_run=dry_run)
+    client = CoinbaseClient(api_key=api_key, api_secret=api_secret, dry_run=dry_run)
 
     # --- Test 1: Symbol mapping ---
     print("Test 1: Symbol mapping")
@@ -63,13 +62,13 @@ async def test_kraken():
     print()
 
     # --- Test 3: Dry-run order ---
-    print("Test 3: Place test order (market buy $10 of BTC)")
+    print("Test 3: Place test order (market buy 10 USDT of BTC)")
     try:
         req = OrderRequest(
-            exchange="kraken",
+            exchange="coinbase",
             coin_id="bitcoin",
             side=OrderSide.BUY,
-            quote="usd",
+            quote="usdt",
             size_usd=10.0,
             order_type=OrderType.MARKET,
             limit_price=65000.0,
@@ -88,6 +87,6 @@ async def test_kraken():
 
 if __name__ == "__main__":
     try:
-        asyncio.run(test_kraken())
+        asyncio.run(test_coinbase())
     except KeyboardInterrupt:
         print("\n✓ Test stopped by user")

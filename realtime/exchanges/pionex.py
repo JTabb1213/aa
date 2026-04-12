@@ -203,7 +203,7 @@ class PionexConnector(BaseExchange):
 
                 if op == "CLOSE":
                     logger.warning("[pionex] Server sent CLOSE")
-                    break
+                    raise ConnectionError("[pionex] Server closed connection (geo-restriction?)")
 
                 topic = data.get("topic", "")
                 if topic != "TRADE":

@@ -71,6 +71,8 @@ TAKER_FEES: Dict[str, float] = {
     "bybit":    0.0010,   # 0.10%  (Bybit spot)
     "okx":      0.0010,   # 0.10%  (OKX spot)
     "pionex":   0.0005,   # 0.05%  (Pionex spot — low-fee exchange)
+    "mexc":     0.0010,   # 0.10%  (MEXC spot)
+    "gateio":   0.0020,   # 0.20%  (Gate.io spot)
 }
 DEFAULT_TAKER_FEE = 0.0050  # fallback for any exchange not listed above
 

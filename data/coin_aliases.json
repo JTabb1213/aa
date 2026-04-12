@@ -1,5 +1,21 @@
 {
     "assets": {
+        "aave": {
+            "symbol": "AAVE",
+            "aliases": [
+                "aave"
+            ],
+            "exchange_symbols": {
+                "kraken": "AAVE",
+                "coinbase": "AAVE",
+                "binance": "AAVE",
+                "bybit": "AAVE",
+                "okx": "AAVE",
+                "pionex": "AAVE",
+                "mexc": "AAVE",
+                "gateio": "AAVE"
+            }
+        },
         "avalanche-2": {
             "symbol": "AVAX",
             "aliases": [
@@ -13,7 +29,9 @@
                 "binance": "AVAX",
                 "bybit": "AVAX",
                 "okx": "AVAX",
-                "pionex": "AVAX"
+                "pionex": "AVAX",
+                "mexc": "AVAX",
+                "gateio": "AVAX"
             }
         },
         "bitcoin": {
@@ -29,7 +47,9 @@
                 "binance": "BTC",
                 "bybit": "BTC",
                 "okx": "BTC",
-                "pionex": "BTC"
+                "pionex": "BTC",
+                "mexc": "BTC",
+                "gateio": "BTC"
             }
         },
         "cardano": {
@@ -44,7 +64,9 @@
                 "binance": "ADA",
                 "bybit": "ADA",
                 "okx": "ADA",
-                "pionex": "ADA"
+                "pionex": "ADA",
+                "mexc": "ADA",
+                "gateio": "ADA"
             }
         },
         "dogecoin": {
@@ -60,7 +82,9 @@
                 "binance": "DOGE",
                 "bybit": "DOGE",
                 "okx": "DOGE",
-                "pionex": "DOGE"
+                "pionex": "DOGE",
+                "mexc": "DOGE",
+                "gateio": "DOGE"
             }
         },
         "ethereum": {
@@ -76,7 +100,44 @@
                 "binance": "ETH",
                 "bybit": "ETH",
                 "okx": "ETH",
-                "pionex": "ETH"
+                "pionex": "ETH",
+                "mexc": "ETH",
+                "gateio": "ETH"
+            }
+        },
+        "filecoin": {
+            "symbol": "FIL",
+            "aliases": [
+                "filecoin",
+                "fil"
+            ],
+            "exchange_symbols": {
+                "kraken": "FIL",
+                "coinbase": "FIL",
+                "binance": "FIL",
+                "bybit": "FIL",
+                "okx": "FIL",
+                "pionex": "FIL",
+                "mexc": "FIL",
+                "gateio": "FIL"
+            }
+        },
+        "injective-protocol": {
+            "symbol": "INJ",
+            "aliases": [
+                "injective-protocol",
+                "injective",
+                "inj"
+            ],
+            "exchange_symbols": {
+                "kraken": "INJ",
+                "coinbase": "INJ",
+                "binance": "INJ",
+                "bybit": "INJ",
+                "okx": "INJ",
+                "pionex": "INJ",
+                "mexc": "INJ",
+                "gateio": "INJ"
             }
         },
         "litecoin": {
@@ -91,7 +152,44 @@
                 "binance": "LTC",
                 "bybit": "LTC",
                 "okx": "LTC",
-                "pionex": "LTC"
+                "pionex": "LTC",
+                "mexc": "LTC",
+                "gateio": "LTC"
+            }
+        },
+        "near": {
+            "symbol": "NEAR",
+            "aliases": [
+                "near",
+                "near protocol",
+                "near-protocol"
+            ],
+            "exchange_symbols": {
+                "kraken": "NEAR",
+                "coinbase": "NEAR",
+                "binance": "NEAR",
+                "bybit": "NEAR",
+                "okx": "NEAR",
+                "pionex": "NEAR",
+                "mexc": "NEAR",
+                "gateio": "NEAR"
+            }
+        },
+        "optimism": {
+            "symbol": "OP",
+            "aliases": [
+                "optimism",
+                "op"
+            ],
+            "exchange_symbols": {
+                "kraken": "OP",
+                "coinbase": "OP",
+                "binance": "OP",
+                "bybit": "OP",
+                "okx": "OP",
+                "pionex": "OP",
+                "mexc": "OP",
+                "gateio": "OP"
             }
         },
         "ripple": {
@@ -106,7 +204,9 @@
                 "binance": "XRP",
                 "bybit": "XRP",
                 "okx": "XRP",
-                "pionex": "XRP"
+                "pionex": "XRP",
+                "mexc": "XRP",
+                "gateio": "XRP"
             }
         },
         "solana": {
@@ -121,7 +221,9 @@
                 "binance": "SOL",
                 "bybit": "SOL",
                 "okx": "SOL",
-                "pionex": "SOL"
+                "pionex": "SOL",
+                "mexc": "SOL",
+                "gateio": "SOL"
             }
         }
     }

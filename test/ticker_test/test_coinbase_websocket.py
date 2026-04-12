@@ -23,18 +23,18 @@ from datetime import datetime
 # Coinbase public WebSocket endpoint (no auth required for ticker)
 COINBASE_WS_URL = "wss://ws-feed.exchange.coinbase.com"
 
-# Products to subscribe to (Coinbase uses "BTC-USD" format)
-TEST_PRODUCTS = [
-    "BTC-USD",
-    "ETH-USD",
-    "SOL-USD",
-    "XRP-USD",
-    "ADA-USD",
-    "DOGE-USD",
-    "AVAX-USD",
-    "LINK-USD",
-    "DOT-USD",
-    "LTC-USD",
+# Products to subscribe to (Coinbase uses "BTC-USDT" format for USDT markets)
+PRODUCTS = [
+    "BTC-USDT",
+    "ETH-USDT",
+    "SOL-USDT",
+    "XRP-USDT",
+    "ADA-USDT",
+    "DOGE-USDT",
+    "AVAX-USDT",
+    "LINK-USDT",
+    "DOT-USDT",
+    "LTC-USDT",
 ]
 
 

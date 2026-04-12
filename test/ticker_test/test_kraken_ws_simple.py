@@ -23,18 +23,18 @@ from datetime import datetime
 # Kraken WebSocket v2 endpoint
 KRAKEN_WS_URL = "wss://ws.kraken.com/v2"
 
-# Pairs to subscribe to (Kraken v2 uses "BTC/USD" format)
+# Pairs to subscribe to (Kraken v2 uses "BTC/USDT" format for USDT markets)
 TEST_PAIRS = [
-    "BTC/USD",
-    "ETH/USD",
-    "SOL/USD",
-    "XRP/USD",
-    "ADA/USD",
-    "DOGE/USD",
-    "AVAX/USD",
-    "LINK/USD",
-    "DOT/USD",
-    "LTC/USD",
+    "BTC/USDT",
+    "ETH/USDT",
+    "SOL/USDT",
+    "XRP/USDT",
+    "ADA/USDT",
+    "DOGE/USDT",
+    "AVAX/USDT",
+    "LINK/USDT",
+    "DOT/USDT",
+    "LTC/USDT",
 ]
 
 

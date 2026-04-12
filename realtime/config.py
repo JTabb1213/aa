@@ -73,6 +73,22 @@ PIONEX_REST_URL = os.getenv(
 )
 
 # ---------------------------------------------------------------------------
+# MEXC exchange settings
+# ---------------------------------------------------------------------------
+MEXC_WS_URL = os.getenv("MEXC_WS_URL", "wss://wbs.mexc.com/ws")
+MEXC_REST_URL = os.getenv(
+    "MEXC_REST_URL", "https://api.mexc.com/api/v3/exchangeInfo",
+)
+
+# ---------------------------------------------------------------------------
+# Gate.io exchange settings
+# ---------------------------------------------------------------------------
+GATEIO_WS_URL = os.getenv("GATEIO_WS_URL", "wss://api.gateio.ws/ws/v4/")
+GATEIO_REST_URL = os.getenv(
+    "GATEIO_REST_URL", "https://api.gateio.ws/api/v4/spot/currency_pairs",
+)
+
+# ---------------------------------------------------------------------------
 # Quote currencies to track
 # ---------------------------------------------------------------------------
 # Only subscribe to pairs quoted in these currencies.
@@ -149,6 +165,12 @@ OKX_PASSPHRASE = os.getenv("OKX_PASSPHRASE", "")
 
 PIONEX_API_KEY = os.getenv("PIONEX_API_KEY", "")
 PIONEX_API_SECRET = os.getenv("PIONEX_API_SECRET", "")
+
+MEXC_API_KEY = os.getenv("MEXC_API_KEY", "")
+MEXC_API_SECRET = os.getenv("MEXC_API_SECRET", "")
+
+GATEIO_API_KEY = os.getenv("GATEIO_API_KEY", "")
+GATEIO_API_SECRET = os.getenv("GATEIO_API_SECRET", "")
 
 # ---------------------------------------------------------------------------
 # Logging

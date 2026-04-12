@@ -37,6 +37,8 @@ from exchanges.binance import BinanceConnector
 from exchanges.bybit import BybitConnector
 from exchanges.okx import OKXConnector
 from exchanges.pionex import PionexConnector
+from exchanges.mexc import MexcConnector
+from exchanges.gateio import GateioConnector
 from normalizer.normalizer import Normalizer
 from normalizer.aliases import AliasResolver
 from storage.price_cache import PriceCache
@@ -49,6 +51,8 @@ from execution.binance import BinanceClient
 from execution.bybit import BybitClient
 from execution.okx import OKXClient
 from execution.pionex import PionexClient
+from execution.mexc import MexcClient
+from execution.gateio import GateioClient
 
 
 # ---------------------------------------------------------------------------
@@ -133,7 +137,9 @@ async def main():
     bybit = BybitConnector(ingestion_queue)
     okx = OKXConnector(ingestion_queue)
     pionex = PionexConnector(ingestion_queue)
-    connectors = [kraken, coinbase, binance, bybit, okx, pionex]
+    mexc = MexcConnector(ingestion_queue)
+    gateio = GateioConnector(ingestion_queue)
+    connectors = [kraken, coinbase, binance, bybit, okx, pionex, mexc, gateio]
    #connectors = [binance]
 
     # 6. Wire up the pipeline
@@ -181,6 +187,16 @@ async def main():
         api_secret=config.PIONEX_API_SECRET,
         dry_run=config.DRY_RUN,
     )
+    mexc_client = MexcClient(
+        api_key=config.MEXC_API_KEY,
+        api_secret=config.MEXC_API_SECRET,
+        dry_run=config.DRY_RUN,
+    )
+    gateio_client = GateioClient(
+        api_key=config.GATEIO_API_KEY,
+        api_secret=config.GATEIO_API_SECRET,
+        dry_run=config.DRY_RUN,
+    )
 
     exec_manager.register(kraken_client)
     exec_manager.register(coinbase_client)
@@ -188,6 +204,8 @@ async def main():
     exec_manager.register(bybit_client)
     exec_manager.register(okx_client)
     exec_manager.register(pionex_client)
+    exec_manager.register(mexc_client)
+    exec_manager.register(gateio_client)
 
     coordinator = ArbitrageCoordinator(exec_manager)
 

@@ -37,16 +37,16 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 # Canonical coin_id → Coinbase product_id mapping
 # ---------------------------------------------------------------------------
-COIN_TO_COINBASE = {
+# Hardcoded fallback (used if coin_aliases.json is missing/unreadable)
+_COINBASE_FALLBACK: dict = {
     "bitcoin": "BTC",
     "ethereum": "ETH",
     "solana": "SOL",
     "ripple": "XRP",
     "cardano": "ADA",
     "dogecoin": "DOGE",
-    "binancecoin": "BNB",
-    "tether": "USDT",
-    "usd-coin": "USDC",
+    "avalanche-2": "AVAX",
+    "litecoin": "LTC",
 }
 
 QUOTE_MAP = {
@@ -69,13 +69,14 @@ class CoinbaseClient(ExchangeClient):
         super().__init__(dry_run=dry_run)
         self._api_key = api_key
         self._api_secret = api_secret
+        self._coin_map = {**_COINBASE_FALLBACK, **self._load_coin_map_from_json("coinbase")}
 
     # ------------------------------------------------------------------
     # Symbol mapping
     # ------------------------------------------------------------------
 
     def get_exchange_symbol(self, coin_id: str, quote: str = "usdt") -> Optional[str]:
-        base = COIN_TO_COINBASE.get(coin_id)
+        base = self._coin_map.get(coin_id)
         q = QUOTE_MAP.get(quote.lower())
         if base and q:
             return f"{base}-{q}"

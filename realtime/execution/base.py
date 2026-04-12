@@ -20,6 +20,7 @@ To add a new exchange:
     4. Register it in main.py
 """
 
+import json
 import logging
 from abc import ABC, abstractmethod
 from typing import Dict, Optional
@@ -121,6 +122,32 @@ class ExchangeClient(ABC):
     # ------------------------------------------------------------------
     # Symbol mapping (override in subclass)
     # ------------------------------------------------------------------
+
+    @staticmethod
+    def _load_coin_map_from_json(exchange_name: str) -> Dict[str, str]:
+        """
+        Load coin_id → exchange base symbol from data/coin_aliases.json.
+
+        Returns a dict like {"bitcoin": "BTC", "ethereum": "ETH", ...}.
+        Called once at __init__ time so the file is only read once per client.
+        Falls back to empty dict on any error (callers can merge with a hardcoded
+        fallback to stay resilient against a missing/malformed JSON file).
+        """
+        try:
+            import config
+            with open(config.ALIAS_JSON_PATH) as fh:
+                data = json.load(fh)
+            return {
+                coin_id: entry["exchange_symbols"][exchange_name]
+                for coin_id, entry in data.get("assets", {}).items()
+                if exchange_name in entry.get("exchange_symbols", {})
+            }
+        except Exception as exc:
+            logger.warning(
+                f"[ExchangeClient] Could not load coin map for '{exchange_name}' "
+                f"from coin_aliases.json: {exc}"
+            )
+            return {}
 
     @abstractmethod
     def get_exchange_symbol(self, coin_id: str, quote: str = "usdt") -> Optional[str]:
