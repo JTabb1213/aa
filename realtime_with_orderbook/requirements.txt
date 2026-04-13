@@ -1,0 +1,14 @@
+# Orderbook Arbitrage Engine
+# ──────────────────────────
+
+# Async websocket client
+websockets>=12.0
+
+# Async HTTP client (health check server)
+aiohttp>=3.9
+
+# Environment variable management
+python-dotenv>=1.0
+
+# Coinbase Advanced Trade JWT signing (ES256 with EC keys)
+cryptography>=40.0
