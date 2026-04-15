@@ -1,38 +1,307 @@
-"""Kraken trading client (stub — dry-run handled by base class)."""
+"""
+Kraken trading client.
 
+Implements the ExchangeClient interface for Kraken's REST API.
+
+Kraken REST trading docs:
+    https://docs.kraken.com/rest/#tag/Trading
+
+Authentication:
+    - API-Key header
+    - API-Sign header (HMAC-SHA512 of nonce + POST data, keyed with
+      base64-decoded secret)
+
+Symbol format:
+    Kraken REST trading uses "ADA/USDT" style pairs.
+
+Order behaviour (fees from USDT):
+    - Market BUY:  oflags=viqc → volume is specified in quote currency
+      (USDT).  You spend USDT; fee is charged in USDT on top.
+    - Market SELL: volume is in base currency (ADA).  Proceeds are in
+      USDT; fee is deducted from USDT proceeds.
+"""
+
+import asyncio
+import base64
+import hashlib
+import hmac
+import logging
+import time
+import urllib.parse
 from typing import Dict, Optional
+
+import aiohttp
+
+import config
 from execution.base import ExchangeClient
-from execution.types import OrderRequest, OrderResult, OrderStatus, OrderSide
+from execution.types import (
+    OrderRequest,
+    OrderResult,
+    OrderSide,
+    OrderStatus,
+    OrderType,
+)
+
+logger = logging.getLogger(__name__)
+
+# ---------------------------------------------------------------------------
+# Canonical coin_id → Kraken symbol mapping
+# ---------------------------------------------------------------------------
+_KRAKEN_FALLBACK: dict = {
+    "bitcoin": "XBT",
+    "ethereum": "ETH",
+    "solana": "SOL",
+    "ripple": "XRP",
+    "cardano": "ADA",
+    "dogecoin": "DOGE",
+    "avalanche-2": "AVAX",
+    "litecoin": "LTC",
+}
 
 QUOTE_MAP = {"usd": "USD", "usdt": "USDT"}
 
 
 class KrakenClient(ExchangeClient):
-    NAME = "kraken"
+    """
+    Kraken REST trading client.
 
-    def __init__(self, api_key: str = "", api_secret: str = "", dry_run: bool = True):
+    Requires KRAKEN_API_KEY and KRAKEN_API_SECRET in .env.
+    """
+
+    NAME = "kraken"
+    BASE_URL = "https://api.kraken.com"
+
+    def __init__(
+        self,
+        api_key: str = "",
+        api_secret: str = "",
+        dry_run: bool = True,
+    ):
         super().__init__(dry_run=dry_run)
         self._api_key = api_key
         self._api_secret = api_secret
         self._coin_map = {
-            "bitcoin": "XBT", "ethereum": "ETH", "solana": "SOL",
+            **_KRAKEN_FALLBACK,
             **self._load_coin_map_from_json("kraken"),
         }
 
-    def get_exchange_symbol(self, coin_id: str, quote: str = "usdt") -> Optional[str]:
+    # ------------------------------------------------------------------
+    # Symbol mapping
+    # ------------------------------------------------------------------
+
+    def get_exchange_symbol(
+        self, coin_id: str, quote: str = "usdt"
+    ) -> Optional[str]:
         base = self._coin_map.get(coin_id)
         q = QUOTE_MAP.get(quote.lower())
-        return f"{base}/{q}" if base and q else None
+        if base and q:
+            return f"{base}/{q}"
+        return None
+
+    # ------------------------------------------------------------------
+    # Auth helpers
+    # ------------------------------------------------------------------
+
+    def _sign(self, urlpath: str, data: dict) -> dict:
+        """Generate signed headers for a private Kraken API call."""
+        encoded = urllib.parse.urlencode(data)
+        message = (str(data["nonce"]) + encoded).encode()
+        sha256 = hashlib.sha256(message).digest()
+        mac = hmac.new(
+            base64.b64decode(self._api_secret),
+            urlpath.encode() + sha256,
+            hashlib.sha512,
+        )
+        return {
+            "API-Key": self._api_key,
+            "API-Sign": base64.b64encode(mac.digest()).decode(),
+        }
+
+    async def _private_request(self, endpoint: str, data: dict) -> dict:
+        """Make an authenticated POST request to Kraken."""
+        urlpath = f"/0/private/{endpoint}"
+        data["nonce"] = str(int(time.time() * 1000))
+        headers = self._sign(urlpath, data)
+
+        async with aiohttp.ClientSession() as session:
+            async with session.post(
+                f"{self.BASE_URL}{urlpath}",
+                data=data,
+                headers=headers,
+                timeout=aiohttp.ClientTimeout(total=10),
+            ) as resp:
+                result = await resp.json()
+
+        if result.get("error"):
+            raise Exception(f"Kraken API error: {result['error']}")
+        return result.get("result", {})
+
+    # ------------------------------------------------------------------
+    # Live execution
+    # ------------------------------------------------------------------
 
     async def _execute_create_order(self, request: OrderRequest) -> OrderResult:
-        # TODO: Implement Kraken REST trading API
-        raise NotImplementedError("Kraken live trading not yet implemented")
+        symbol = self.get_exchange_symbol(request.coin_id, request.quote)
+        if not symbol:
+            return OrderResult(
+                exchange=self.NAME,
+                coin_id=request.coin_id,
+                side=request.side,
+                status=OrderStatus.REJECTED,
+                error=f"Unknown symbol for {request.coin_id}/{request.quote}",
+            )
+
+        data = {
+            "pair": symbol,
+            "type": request.side.value,
+            "ordertype": request.order_type.value,
+        }
+
+        if request.order_type == OrderType.MARKET:
+            if request.side == OrderSide.BUY:
+                # Buy with USDT — oflags=viqc means volume is in quote
+                # currency.  Fee is charged on top in USDT.
+                data["volume"] = str(request.size_usd)
+                data["oflags"] = "viqc"
+            else:
+                # Sell: volume is in base currency (ADA).
+                if request.limit_price and request.limit_price > 0:
+                    data["volume"] = str(
+                        round(request.size_usd / request.limit_price, 8)
+                    )
+                else:
+                    return OrderResult(
+                        exchange=self.NAME,
+                        coin_id=request.coin_id,
+                        side=request.side,
+                        status=OrderStatus.REJECTED,
+                        error="Market sell requires limit_price for volume calc",
+                    )
+        else:
+            data["price"] = str(request.limit_price)
+            if request.limit_price and request.limit_price > 0:
+                data["volume"] = str(
+                    round(request.size_usd / request.limit_price, 8)
+                )
+
+        try:
+            result = await self._private_request("AddOrder", data)
+        except Exception as e:
+            return OrderResult(
+                exchange=self.NAME,
+                coin_id=request.coin_id,
+                side=request.side,
+                status=OrderStatus.FAILED,
+                error=str(e),
+            )
+
+        order_id = result.get("txid", [None])[0]
+        if not order_id:
+            return OrderResult(
+                exchange=self.NAME,
+                coin_id=request.coin_id,
+                side=request.side,
+                status=OrderStatus.FAILED,
+                error="No txid returned from AddOrder",
+            )
+
+        # Poll for fill (market orders fill nearly instantly)
+        for attempt in range(20):
+            await asyncio.sleep(0.3)
+            try:
+                query = await self._private_request(
+                    "QueryOrders", {"txid": order_id}
+                )
+                order_info = query.get(order_id, {})
+                status_str = order_info.get("status", "")
+
+                if status_str == "closed":
+                    vol_exec = float(order_info.get("vol_exec", 0))
+                    cost = float(order_info.get("cost", 0))
+                    fee = float(order_info.get("fee", 0))
+                    avg_price = cost / vol_exec if vol_exec > 0 else 0
+
+                    return OrderResult(
+                        exchange=self.NAME,
+                        coin_id=request.coin_id,
+                        side=request.side,
+                        status=OrderStatus.FILLED,
+                        order_id=order_id,
+                        filled_qty=vol_exec,
+                        filled_price=avg_price,
+                        filled_usd=cost,
+                        fee=fee,
+                    )
+                elif status_str in ("canceled", "expired"):
+                    return OrderResult(
+                        exchange=self.NAME,
+                        coin_id=request.coin_id,
+                        side=request.side,
+                        status=OrderStatus.CANCELLED,
+                        order_id=order_id,
+                        error=f"Order {status_str}",
+                    )
+            except Exception as e:
+                logger.warning(f"[kraken] poll attempt {attempt + 1}: {e}")
+
+        return OrderResult(
+            exchange=self.NAME,
+            coin_id=request.coin_id,
+            side=request.side,
+            status=OrderStatus.OPEN,
+            order_id=order_id,
+            error="Fill not confirmed within polling timeout",
+        )
 
     async def _execute_get_order(self, order_id: str) -> OrderResult:
-        raise NotImplementedError
+        result = await self._private_request(
+            "QueryOrders", {"txid": order_id}
+        )
+        order_info = result.get(order_id, {})
+        status_str = order_info.get("status", "unknown")
+
+        status_map = {
+            "closed": OrderStatus.FILLED,
+            "canceled": OrderStatus.CANCELLED,
+            "open": OrderStatus.OPEN,
+            "pending": OrderStatus.PENDING,
+        }
+
+        vol_exec = float(order_info.get("vol_exec", 0))
+        cost = float(order_info.get("cost", 0))
+        fee = float(order_info.get("fee", 0))
+        avg_price = cost / vol_exec if vol_exec > 0 else 0
+
+        return OrderResult(
+            exchange=self.NAME,
+            coin_id="",
+            side=OrderSide.BUY,
+            status=status_map.get(status_str, OrderStatus.FAILED),
+            order_id=order_id,
+            filled_qty=vol_exec,
+            filled_price=avg_price,
+            filled_usd=cost,
+            fee=fee,
+        )
 
     async def _execute_cancel_order(self, order_id: str) -> bool:
-        raise NotImplementedError
+        try:
+            await self._private_request(
+                "CancelOrder", {"txid": order_id}
+            )
+            return True
+        except Exception as e:
+            logger.error(f"[kraken] cancel failed: {e}")
+            return False
 
     async def _fetch_balances(self) -> Dict[str, float]:
-        raise NotImplementedError
+        result = await self._private_request("Balance", {})
+        balances = {}
+        key_map = {
+            "ZUSD": "usd", "XXBT": "btc", "XETH": "eth",
+            "SOL": "sol", "ADA": "ada", "USDT": "usdt",
+        }
+        for k, v in result.items():
+            clean = key_map.get(k, k.lower().lstrip("xz"))
+            balances[clean] = float(v)
+        return balances

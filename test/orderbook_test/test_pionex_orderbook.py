@@ -35,6 +35,7 @@ async def run_pionex_orderbook_test():
                     "op": "SUBSCRIBE",
                     "topic": "DEPTH",
                     "symbol": pair,
+                    "limit": 5,
                 }
                 await ws.send(json.dumps(subscribe_msg))
 

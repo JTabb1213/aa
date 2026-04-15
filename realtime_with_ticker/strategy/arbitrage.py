@@ -44,12 +44,65 @@ Only signals where net_spread_pct >= MIN_NET_SPREAD_PCT are emitted.
 import asyncio
 import itertools
 import logging
+import os
 import time
 from dataclasses import dataclass, field
+from datetime import datetime
 from typing import Dict, List, Optional
 
 import config
 from storage.price_cache import PriceCache
+
+# ---------------------------------------------------------------------------
+# Trade signal file logger
+# ---------------------------------------------------------------------------
+
+_LOGS_DIR = os.path.join(os.path.dirname(__file__), "..", "logs")
+_LOG_FILE = os.path.join(_LOGS_DIR, "ticker_trades.log")
+
+# Header to prepend if the log file is new/empty
+_LOG_HEADER = (
+    f"{'TIMESTAMP':<22}"
+    f"{'COIN':<20}"
+    f"{'BUY FROM':<10}"
+    f"{'BUY PRICE':>13}"
+    f"{'SELL TO':<10}"
+    f"{'SELL PRICE':>13}"
+    f"  {'GROSS SPREAD':>12}  {'NET SPREAD':>12}  {'EST PROFIT':>11}\n"
+    + "-" * 130 + "\n"
+)
+
+
+def _ensure_log_dir() -> None:
+    os.makedirs(_LOGS_DIR, exist_ok=True)
+    if not os.path.exists(_LOG_FILE) or os.path.getsize(_LOG_FILE) == 0:
+        with open(_LOG_FILE, "w") as f:
+            f.write(_LOG_HEADER)
+
+
+def _write_signal(signal: "ArbitrageSignal") -> None:
+    """Append one detected signal to realtime_with_ticker/logs/ticker_trades.log in table-row format."""
+    try:
+        _ensure_log_dir()
+        ts = datetime.fromtimestamp(signal.timestamp).strftime("%Y-%m-%d %H:%M:%S")
+        buy_price_str   = f"${signal.buy_ask:,.4f}"
+        sell_price_str  = f"${signal.sell_bid:,.4f}"
+        gross_spread_s  = f"{signal.gross_spread_pct:>+11.4f}%"
+        net_spread_s    = f"{signal.net_spread_pct:>+11.4f}%"
+        profit_s        = f"${signal.est_profit_usd:>+10.4f}"
+        line = (
+            f"{ts:<22}"
+            f"{signal.coin_id:<20}"
+            f"{signal.buy_exchange:<10}"
+            f"{buy_price_str:>13}"
+            f"{signal.sell_exchange:<10}"
+            f"{sell_price_str:>13}"
+            f"  {gross_spread_s:>12}  {net_spread_s:>12}  {profit_s:>11}\n"
+        )
+        with open(_LOG_FILE, "a") as f:
+            f.write(line)
+    except Exception as e:
+        logging.getLogger(__name__).warning(f"Failed to write signal log: {e}")
 
 logger = logging.getLogger(__name__)
 
@@ -95,6 +148,7 @@ class ArbitrageSignal:
         gross_spread_pct — raw spread before fees: (sell_bid - buy_ask) / buy_ask * 100
         net_spread_pct   — spread after both taker fees (this is your actual edge)
         est_profit_usd   — estimated profit for a TRADE_SIZE_USD position
+        timestamp        — unix timestamp when signal was emitted
     """
     coin_id: str
     buy_exchange: str
@@ -159,6 +213,7 @@ class ArbitrageScanner:
             f"min_net_spread={config.MIN_NET_SPREAD_PCT}%  "
             f"trade_size=${config.TRADE_SIZE_USD}"
         )
+        _ensure_log_dir()
         while True:
             signals = self.scan()
             for signal in signals:
@@ -166,6 +221,7 @@ class ArbitrageScanner:
                 logger.info(str(signal))
                 if config.SIGNAL_PRINT_ENABLED:
                     print(signal, flush=True)
+                _write_signal(signal)
 
             await asyncio.sleep(interval)
 

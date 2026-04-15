@@ -13,7 +13,7 @@ import asyncio
 import json
 import websockets
 
-BINANCE_WS_URL = "wss://stream.binance.us:9443/ws"
+BINANCE_WS_URL = "wss://stream.binance.us:9443/stream"
 TEST_PAIRS = ["btcusdt", "ethusdt", "solusdt"]
 
 

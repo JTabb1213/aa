@@ -3,7 +3,7 @@
 Kraken WebSocket orderbook test.
 
 Connects to Kraken WebSocket v2 and subscribes to the order book channel
-for a small set of USD pairs. Prints every orderbook message received.
+for a small set of USDT pairs. Prints every orderbook message received.
 
 Usage:
     cd /Users/jacktabb/Desktop/app
@@ -21,9 +21,9 @@ import websockets
 
 KRAKEN_WS_URL = "wss://ws.kraken.com/v2"
 TEST_PAIRS = [
-    "BTC/USD",
-    "ETH/USD",
-    "SOL/USD",
+    "BTC/USDT",
+    "ETH/USDT",
+    "SOL/USDT",
 ]
 
 

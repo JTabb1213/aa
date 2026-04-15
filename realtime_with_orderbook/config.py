@@ -135,3 +135,44 @@ LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
 # Health check server
 # ---------------------------------------------------------------------------
 HEALTH_PORT = int(os.getenv("PORT", "8082"))
+
+# ---------------------------------------------------------------------------
+# One-shot live test mode
+# ---------------------------------------------------------------------------
+# ONE_SHOT_MODE=true  → execute exactly one arbitrage trade, log everything,
+#                       then shut down.  Designed for live testing with real
+#                       money — only ONE trade can ever happen per run.
+#                       Overrides LIVE_TABLE and SIGNAL_PRINT_ENABLED.
+# ONE_SHOT_MODE=false → normal continuous operation (default)
+ONE_SHOT_MODE = os.getenv("ONE_SHOT_MODE", "false").strip().lower() in (
+    "1", "true", "yes", "on",
+)
+
+# ---------------------------------------------------------------------------
+# Enabled exchanges (optional filter)
+# ---------------------------------------------------------------------------
+# Comma-separated list of exchanges to connect to.
+# Leave empty (or omit) to connect to ALL exchanges.
+# Example: "kraken,okx"
+_enabled_raw = os.getenv("ENABLED_EXCHANGES", "").strip()
+ENABLED_EXCHANGES = [
+    e.strip().lower()
+    for e in _enabled_raw.split(",")
+    if e.strip()
+] if _enabled_raw else []
+
+# ---------------------------------------------------------------------------
+# Trade run logging (audit log file)
+# ---------------------------------------------------------------------------
+# Creates a timestamped log in logs/live_run_<timestamp>.log with
+# balances, signal details, fill info, and P&L summary.
+TRADE_LOG_ENABLED = os.getenv("TRADE_LOG_ENABLED", "true").strip().lower() in (
+    "1", "true", "yes", "on",
+)
+
+# ---------------------------------------------------------------------------
+# OKX REST API base URL
+# ---------------------------------------------------------------------------
+# US accounts MUST use "https://us.okx.com" — the global URL will reject
+# API keys registered on the US platform.
+OKX_BASE_URL = os.getenv("OKX_BASE_URL", "https://www.okx.com")

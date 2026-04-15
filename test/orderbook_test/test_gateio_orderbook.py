@@ -27,18 +27,18 @@ async def run_gateio_orderbook_test():
     print("=" * 80)
     print()
 
-    subscribe_msg = {
-        "time": int(time.time()),
-        "channel": "spot.order_book",
-        "event": "subscribe",
-        "payload": TEST_PAIRS,
-    }
-
     tick_count = 0
     try:
         async with websockets.connect(GATEIO_WS_URL, ping_interval=None) as ws:
-            await ws.send(json.dumps(subscribe_msg))
-            print("✓ Sent subscribe message")
+            for pair in TEST_PAIRS:
+                subscribe_msg = {
+                    "time": int(time.time()),
+                    "channel": "spot.order_book",
+                    "event": "subscribe",
+                    "payload": [pair, "5", "100ms"],
+                }
+                await ws.send(json.dumps(subscribe_msg))
+            print("✓ Sent subscribe messages")
             print("Waiting for orderbook messages... (Ctrl+C to stop)")
             print("-" * 80)
 

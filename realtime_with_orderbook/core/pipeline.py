@@ -47,13 +47,13 @@ class _OrderBookPrinter:
     """
 
     _HDR = (
-        "  {:<20}{:<9}{:>13}{:>11}  {:<9}{:>13}{:>11}  {:>10}  {:>10}  {:>11}".format(
-            "COIN", "BUY FROM", "BEST ASK", "ASK DEPTH",
-            "SELL TO", "BEST BID", "BID DEPTH",
+        "  {:<20}{:<9}{:>5}{:>13}{:>11}  {:<9}{:>5}{:>13}{:>11}  {:>10}  {:>10}  {:>11}".format(
+            "COIN", "BUY FROM", "AGE", "BEST ASK", "ASK DEPTH",
+            "SELL TO", "AGE", "BEST BID", "BID DEPTH",
             "SPREAD %", "NET %", "EST PROFIT",
         )
     )
-    _SEP = "  " + "\u2500" * 125
+    _SEP = "  " + "\u2500" * 135
 
     def __init__(self) -> None:
         self._rows: Dict[str, str] = {}   # coin_id → rendered line
@@ -72,6 +72,9 @@ class _OrderBookPrinter:
             # Single exchange — show internal bid-ask spread (same exchange both sides)
             if books:
                 ex_name, book = next(iter(books.items()))
+                now = time.time()
+                age_s = now - book.timestamp
+                age_str = f"{age_s:.0f}s" if age_s < 60 else f"{age_s/60:.1f}m"
                 ask_str   = f"${book.best_ask.price:,.4f}" if book.best_ask else "—"
                 bid_str   = f"${book.best_bid.price:,.4f}" if book.best_bid else "—"
                 ask_depth = f"${book.ask_depth_usd():,.0f}" if book.best_ask else "—"
@@ -109,8 +112,8 @@ class _OrderBookPrinter:
                     spread_s = net_s = prof_s = "—"
 
                 self._rows[coin_id] = (
-                    f"  {coin_id:<20}{ex_name:<9}{ask_str:>13}{ask_depth:>11}"
-                    f"  {ex_name:<9}{bid_str:>13}{bid_depth:>11}"
+                    f"  {coin_id:<20}{ex_name:<9}{age_str:>5}{ask_str:>13}{ask_depth:>11}"
+                    f"  {ex_name:<9}{age_str:>5}{bid_str:>13}{bid_depth:>11}"
                     f"  {spread_s:>10}  {net_s:>10}  {prof_s:>11}"
                 )
                 if coin_id not in self._order:
@@ -144,6 +147,13 @@ class _OrderBookPrinter:
 
         if not best_buy_book or not best_sell_book:
             return
+
+        # Book ages
+        now = time.time()
+        buy_age_s  = now - best_buy_book.timestamp
+        sell_age_s = now - best_sell_book.timestamp
+        buy_age_str  = f"{buy_age_s:.0f}s"  if buy_age_s  < 60 else f"{buy_age_s /60:.1f}m"
+        sell_age_str = f"{sell_age_s:.0f}s" if sell_age_s < 60 else f"{sell_age_s/60:.1f}m"
 
         # Compute spread (gross and net)
         buy_fee = TAKER_FEES.get(best_buy_ex, DEFAULT_TAKER_FEE)
@@ -190,8 +200,8 @@ class _OrderBookPrinter:
             prof_s = f"\033[31m{prof_s}\033[0m"
 
         self._rows[coin_id] = (
-            f"  {coin_id:<20}{best_buy_ex:<9}{ask_str:>13}{ask_depth_str:>11}"
-            f"  {best_sell_ex:<9}{bid_str:>13}{bid_depth_str:>11}"
+            f"  {coin_id:<20}{best_buy_ex:<9}{buy_age_str:>5}{ask_str:>13}{ask_depth_str:>11}"
+            f"  {best_sell_ex:<9}{sell_age_str:>5}{bid_str:>13}{bid_depth_str:>11}"
             f"  {spread_s}  {net_s}  {prof_s}"
         )
         if coin_id not in self._order:

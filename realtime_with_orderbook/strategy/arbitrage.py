@@ -40,14 +40,16 @@ _LOG_HEADER = (
     f"{'TIMESTAMP':<22}"
     f"{'COIN':<20}"
     f"{'BUY FROM':<10}"
+    f"{'AGE':>5}"
     f"{'BEST ASK':>13}"
     f"{'ASK DEPTH':>11}"
     f"  "
     f"{'SELL TO':<10}"
+    f"{'AGE':>5}"
     f"{'BEST BID':>13}"
     f"{'BID DEPTH':>11}"
     f"  {'SPREAD %':>10}  {'NET %':>10}  {'EST PROFIT':>11}\n"
-    + "-" * 140 + "\n"
+    + "-" * 152 + "\n"
 )
 
 
@@ -70,14 +72,18 @@ def _write_signal(signal: "ArbitrageSignal") -> None:
         spread_s  = f"{signal.gross_spread_pct:>+9.4f}%"
         net_s     = f"{signal.net_spread_pct:>+9.4f}%"
         prof_s    = f"${signal.est_profit_usd:>+10.4f}"
+        buy_age   = f"{signal.buy_book_age_s:.1f}s"
+        sell_age  = f"{signal.sell_book_age_s:.1f}s"
         line = (
             f"{ts:<22}"
             f"{signal.coin_id:<20}"
             f"{signal.buy_exchange:<10}"
+            f"{buy_age:>5}"
             f"{ask_str:>13}"
             f"{ask_depth:>11}"
             f"  "
             f"{signal.sell_exchange:<10}"
+            f"{sell_age:>5}"
             f"{bid_str:>13}"
             f"{bid_depth:>11}"
             f"  {spread_s:>10}  {net_s:>10}  {prof_s:>11}\n"
@@ -135,6 +141,8 @@ class ArbitrageSignal:
     trade_size_usd: float
     slippage_buy_pct: float       # how much worse than best ask
     slippage_sell_pct: float      # how much worse than best bid
+    buy_book_age_s: float = 0.0   # seconds since buy-side book was last updated
+    sell_book_age_s: float = 0.0  # seconds since sell-side book was last updated
     timestamp: float = field(default_factory=time.time)
 
     def __str__(self) -> str:
@@ -271,6 +279,7 @@ class OrderBookArbitrageScanner:
         slippage_buy = (eff_buy - best_ask) / best_ask * 100 if best_ask else 0
         slippage_sell = (best_bid - eff_sell) / best_bid * 100 if best_bid else 0
 
+        now = time.time()
         return ArbitrageSignal(
             coin_id=coin_id,
             buy_exchange=buy_book.exchange,
@@ -287,6 +296,8 @@ class OrderBookArbitrageScanner:
             trade_size_usd=trade_usd,
             slippage_buy_pct=round(slippage_buy, 6),
             slippage_sell_pct=round(slippage_sell, 6),
+            buy_book_age_s=round(now - buy_book.timestamp, 1),
+            sell_book_age_s=round(now - sell_book.timestamp, 1),
         )
 
     @property

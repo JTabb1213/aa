@@ -9,3 +9,6 @@ aiohttp>=3.9
 
 # Environment variable management
 python-dotenv>=1.0
+
+# JWT signing for Coinbase Advanced Trade authentication
+cryptography>=40.0
